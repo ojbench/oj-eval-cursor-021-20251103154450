@@ -31,36 +31,17 @@ int main() {
         int bestHit = -1;
         int bestReward = INT_MIN;
         char bestOp = 'C';
-        int bestColRem = -1;
 
         // Try all options and pick the one with most bricks hit (tie-break by reward)
-        // Precompute remaining bricks per column at current state
-        auto remainingInColumn = [&](int x) -> int {
-            if (x == 0) return -1;
-            int idx = x + game->n;
-            if (idx < 0 || idx >= (int)game->situation_now.map.hit.size()) return -1;
-            int hitCount = (int)game->situation_now.map.hit[idx].count();
-            int total = 2 * game->n;
-            if (hitCount > total) hitCount = total;
-            return total - hitCount;
-        };
-
         for (char op : OPS) {
             auto *snapshot = game->save();
             int reward = game->play(op);
             int hit = game->touch_cnt; // bricks hit during this move
-            int colRem = -1;
-            if (hit > 0 && !game->touched_bricks.empty()) {
-                int firstX = game->touched_bricks.front().x;
-                colRem = remainingInColumn(firstX);
-            }
             // Prefer more hits; tie-break by higher reward (captures 1-2-3 bonus)
-            if (colRem > bestColRem ||
-                (colRem == bestColRem && (hit > bestHit || (hit == bestHit && reward > bestReward)))) {
+            if (hit > bestHit || (hit == bestHit && reward > bestReward)) {
                 bestHit = hit;
                 bestReward = reward;
                 bestOp = op;
-                bestColRem = colRem;
             }
             game->load(snapshot);
             game->erase(snapshot);

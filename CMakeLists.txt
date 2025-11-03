@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(code main.cpp)
 
-target_include_directories(code PRIVATE ${CMAKE_SOURCE_DIR}/third_party/Snooker-Brick-Out-publish)
+target_include_directories(code PRIVATE ${CMAKE_SOURCE_DIR}/vendor)
 
 # Optimize for speed, but keep symbols in case of diagnostics
 if (NOT CMAKE_BUILD_TYPE)

@@ -1,0 +1,19 @@
+cmake_minimum_required(VERSION 3.10)
+project(oj021_snooker_brick_out)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(code main.cpp)
+
+target_include_directories(code PRIVATE ${CMAKE_SOURCE_DIR}/third_party/Snooker-Brick-Out-publish)
+
+# Optimize for speed, but keep symbols in case of diagnostics
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(code PRIVATE -O2 -pipe)
+endif()

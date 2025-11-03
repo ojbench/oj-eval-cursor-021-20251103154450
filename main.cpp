@@ -47,28 +47,53 @@ int main() {
             game->erase(snapshot);
         }
 
-        // If no brick would be hit this cycle, steer vx toward small non-zero magnitude
+        // If no brick would be hit this cycle, try a cheap 2-step lookahead;
+        // if still none, steer vx toward small non-zero magnitude
         if (bestHit <= 0) {
             ++stallCount;
-            int curVx = game->situation_now.ball.vx;
-            int targetAbs = (stallCount >= maxStallBeforeNudge) ? 1 : 2; // try 2 then 1
-            int bestAbsAfter = INT_MAX;
-            char steerOp = 'C';
-            for (char op : OPS) {
-                int dv = game->check_op(op);
-                int nv = curVx + dv;
-                int cand = std::abs(nv);
-                // prefer non-zero and as close to targetAbs as possible; tie-break smaller abs
-                int primary = std::abs(cand - targetAbs);
-                int secondary = cand;
-                if ((cand > 0 && (primary < std::abs(bestAbsAfter - targetAbs) ||
-                                   (primary == std::abs(bestAbsAfter - targetAbs) && secondary < bestAbsAfter))) ||
-                    (bestAbsAfter == INT_MAX)) {
-                    bestAbsAfter = cand;
-                    steerOp = op;
+            int bestFuture = -1;
+            char opFromLookahead = 'C';
+            for (char op1 : OPS) {
+                auto *s1 = game->save();
+                (void)game->play(op1);
+                int localBest = 0;
+                for (char op2 : OPS) {
+                    auto *s2 = game->save();
+                    (void)game->play(op2);
+                    localBest = max(localBest, game->touch_cnt);
+                    game->load(s2);
+                    game->erase(s2);
                 }
+                if (localBest > bestFuture) {
+                    bestFuture = localBest;
+                    opFromLookahead = op1;
+                }
+                game->load(s1);
+                game->erase(s1);
             }
-            bestOp = steerOp;
+            if (bestFuture > 0) {
+                bestOp = opFromLookahead;
+            } else {
+                int curVx = game->situation_now.ball.vx;
+                int targetAbs = (stallCount >= maxStallBeforeNudge) ? 1 : 2; // try 2 then 1
+                int bestAbsAfter = INT_MAX;
+                char steerOp = 'C';
+                for (char op : OPS) {
+                    int dv = game->check_op(op);
+                    int nv = curVx + dv;
+                    int cand = std::abs(nv);
+                    // prefer non-zero and as close to targetAbs as possible; tie-break smaller abs
+                    int primary = std::abs(cand - targetAbs);
+                    int secondary = cand;
+                    if ((cand > 0 && (primary < std::abs(bestAbsAfter - targetAbs) ||
+                                       (primary == std::abs(bestAbsAfter - targetAbs) && secondary < bestAbsAfter))) ||
+                        (bestAbsAfter == INT_MAX)) {
+                        bestAbsAfter = cand;
+                        steerOp = op;
+                    }
+                }
+                bestOp = steerOp;
+            }
         } else {
             stallCount = 0;
         }
